@@ -8,14 +8,27 @@
 import SwiftUI
 
 struct ContentView: View {
+    var numberOfQuestions = [5, 10, 20]
+    
+    @State private var multiplicationNumber = 6
+    @State private var questionAmount = 5
+    
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundColor(.accentColor)
-            Text("Hello, world!")
+            Stepper("Up to \(multiplicationNumber)", value: $multiplicationNumber, in: 2...12)
+            
+            Picker("\(questionAmount) questions", selection: $questionAmount) {
+                ForEach(numberOfQuestions, id: \.self) { number in
+                    Text(String(number))
+                }
+            }
+            .pickerStyle(.segmented)
+            
+            List(0...questionAmount, id: \.self) { _ in
+                Text("\(String(Int.random(in: 2...multiplicationNumber))) x \(String(Int.random(in: 2...multiplicationNumber)))")
+            }
         }
-        .padding()
     }
 }
 
