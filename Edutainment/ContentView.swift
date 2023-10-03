@@ -8,25 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    var numberOfQuestions = [5, 10, 20]
     
+    var numberOfQuestions = [5, 10, 20]
     @State private var multiplicationNumber = 6
     @State private var questionAmount = 5
-    @State private var answerInput = ""
-    @State private var nonDuplicateQuestions = [[Int]]()
+    @State private var answerInput = Array(repeating: "", count: 20)
+    @State private var answersChecked = false
+    @State private var score = 0
+    @State private var questionsArray = Array(repeating: Question(text: "", answer: 12), count: 20)
+    @FocusState private var textIsFocused: Bool
     
     var questions: [Question] {
         var questionsArray = [Question]()
-        for _ in 0..<questionAmount {
-            var tempArray = [Int]()
+        for _ in 0..<20 {
             let number1 = Int.random(in: 2...multiplicationNumber)
             let number2 = Int.random(in: 2...multiplicationNumber)
-            
-            tempArray.append(number1)
-            tempArray.append(number2)
-            tempArray.sort()
-            
-            nonDuplicateQuestions.append(tempArray)
             
             let text = "\(number1) x \(number2) = "
             let answer = number1 * number2
@@ -37,35 +33,106 @@ struct ContentView: View {
     }
     
     var body: some View {
-        VStack {
-            Stepper("Up to \(multiplicationNumber)", value: $multiplicationNumber, in: 2...12)
-            
-            Picker("\(questionAmount) questions", selection: $questionAmount) {
-                ForEach(numberOfQuestions, id: \.self) { number in
-                    Text(String(number))
-                }
-            }
-            .pickerStyle(.segmented)
-            
-            List(questions) { question in
+        NavigationView {
+            VStack {
                 HStack{
-                    Text(question.text)
-                    TextField("", text: $answerInput)
+                    Stepper("Up to \(multiplicationNumber)", value: $multiplicationNumber, in: 2...12)
+                        .fixedSize()
+                    Spacer()
+                    Button("Create Worksheet", action: generateQuestions)
+                }
+                
+                Picker("\(questionAmount) questions", selection: $questionAmount) {
+                    ForEach(numberOfQuestions, id: \.self) { number in
+                        Text(String(number))
+                    }
+                }
+                .background(difficultyColor())
+                .pickerStyle(.segmented)
+                .animation(.default, value: questionAmount)
+                
+                Text(answersChecked ? "Score: \(score) / \(questionAmount)" : "Score:  / \(questionAmount)")
+                
+                List(0..<questionAmount, id: \.self) { index in
+                    HStack {
+                        Text(questionsArray[index].text)
+                        TextField("", text: $answerInput[index])
+                            .keyboardType(.decimalPad)
+                            .focused($textIsFocused)
+                    }
+                    .foregroundColor(answerStatus(answer: questionsArray[index].answer, guess: answerInput[index]))
+                }
+                .scrollContentBackground(.hidden)
+                .animation(.default, value: answersChecked)
+
+                Button("Check Answers", action: checkAnswers)
+            }
+            .navigationTitle("Edutainment")
+            .padding()
+            .background(.blue)
+            .onAppear(perform: generateQuestions)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        textIsFocused = false
+                    }
                 }
             }
         }
-        .onAppear(perform: generateQuestions)
+        .foregroundColor(.white)
     }
     
     func generateQuestions() -> Void {
-        for _ in 0..<questionAmount {
-            var number1 = Int.random(in: 2...multiplicationNumber)
-            var number2 = Int.random(in: 2...multiplicationNumber)
-            var text = "\(number1) x \(number2) = "
-            var answer = number1 * number2
-            var newQuestion = Question(text: text, answer: answer)
-            //questions.append(newQuestion)
+        score = 0
+        answersChecked = false
+        questionsArray = Array(repeating: Question(text: "", answer: 12), count: 20)
+        for index in 0..<20 {
+            let number1 = Int.random(in: 2...multiplicationNumber)
+            let number2 = Int.random(in: 2...multiplicationNumber)
+        
+            let text = "\(number1) x \(number2) = "
+            let answer = number1 * number2
+            let newQuestion = Question(text: text, answer: answer)
+            questionsArray[index] = newQuestion
         }
+    }
+    
+    func checkAnswers() -> Void {
+        answersChecked = true
+        score = 0
+        for index in 0...questionAmount {
+            if(questionsArray[index].answer == Int(answerInput[index])) {
+                score += 1
+            }
+        }
+    }
+    
+    func difficultyColor() -> Color {
+        
+        switch questionAmount {
+        case 5:
+            return .green
+        case 10:
+            return .yellow
+        case 20:
+            return .red
+        default:
+            return .white
+        }
+    }
+    
+    func answerStatus(answer: Int , guess: String) -> Color{
+        guard answersChecked != false else {
+            return .black
+        }
+        
+        if String(answer) == guess {
+            return .green
+        } else {
+            return .red
+        }
+        
     }
 }
 
